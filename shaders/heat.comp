@@ -1,0 +1,77 @@
+#version 450
+
+// We spin up threads in 2D blocks of 16x16 to match your 2D simulation grid
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+// Binding 0: The parameters (matches your C++ Uniform Buffer)
+layout(binding = 0) uniform ParameterBuffer {
+    float deltaTime;
+    float alpha;
+    float dx;
+    float dy;
+    uint width;
+    uint height;
+    float mouseX;         
+    float mouseY;        
+    float isMouseDown;   
+} params;
+
+// Binding 1: The "Read" buffer (State n)
+layout(std430, binding = 1) readonly buffer GridIn {
+    float temperatureIn[];
+};
+
+// Binding 2: The "Write" buffer (State n+1)
+layout(std430, binding = 2) buffer GridOut {
+    float temperatureOut[];
+};
+
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    uint j = gl_GlobalInvocationID.y;
+
+    // kill any threads that fall outside the simulation zone.
+    if (i >= params.width || j >= params.height) {
+        return;
+    }
+
+    // Flatten the 2D coordinate into a 1D array index
+    uint index = j * params.width + i;
+
+    //Boundary Conditions
+    // If this thread represents a cell on the physical edge of the grid, keep it cold
+    if (i == 0 || i == params.width - 1 || j == 0 || j == params.height - 1) {
+        temperatureOut[index] = 0.0; 
+        return;
+    }
+
+    //Temperatue Indices for neighbouring temperatures
+    float u_left, u_right, u_up, u_down, u_centre; 
+    u_left = temperatureIn[j * params.width + (i - 1)];
+    u_right = temperatureIn[j * params.width + (i + 1)];
+    u_up = temperatureIn[(j + 1) * params.width + i];
+    u_down = temperatureIn[(j - 1) * params.width + i];
+    u_centre = temperatureIn[j  * params.width + i];
+
+    //Applying Forward Euler Method
+    //1. Change in x direction
+    float x_change = (u_right - 2.0 * u_centre + u_left)/(params.dx * params.dx);
+
+    //2. Change in y direction
+    float y_change = (u_up - 2.0 * u_centre + u_down)/(params.dy * params.dy);
+
+    //Combine to get new Centre Temperatue and update
+    u_centre += (params.alpha * params.deltaTime) * (x_change + y_change);
+
+	if (params.isMouseDown > 0.5) {
+        // Calculate distance from this thread's pixel to the mouse pointer
+        float dist = distance(vec2(i, j), vec2(params.mouseX, params.mouseY));
+        
+        // If this pixel is within our 15-pixel "brush" radius, pump heat into it!
+        if (dist < 15.0) {
+            u_centre += 10000.0 * params.deltaTime; 
+        }
+    }
+    
+    temperatureOut[index] = u_centre;
+}
