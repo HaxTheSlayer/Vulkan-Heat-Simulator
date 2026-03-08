@@ -17,5 +17,11 @@ The simulation solves the 2D Heat Equation:
 
 This is discretized using the **Forward Euler Method** (FTCS) in the compute shader to calculate the temperature of each cell for the next time step. To ensure numerical stability, spatial and temporal step sizes were balanced with the thermal diffusivity constant (α).
 
+## Real-Time Interactive Demo
+
+![Vulkan Heat Simulator Demo](media/heat_spread.gif)
+
+*Offloading FTCS finite difference calculations to Vulkan compute shaders allows for real-time 800x800 grid simulation at 60 FPS.*
+
 ## Acknowledgments
 A massive thank you to [Sascha Willems](https://github.com/SaschaWillems/Vulkan) for his incredible open-source Vulkan C++ examples. His repositories were an invaluable resource for understanding Vulkan's synchronization, pipeline setup, and memory management architecture.
