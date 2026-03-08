@@ -216,7 +216,7 @@ void PDESolver::createComputePipeline() {
 void PDESolver::dispatchCompute(vk::raii::CommandBuffer& cmdBuffer, float deltaTime, float mouseX, float mouseY, bool isMouseDown) {
     ParameterBuffer params{};
     params.deltaTime = 0.016f;
-    params.alpha = 15.0f;
+    params.alpha = 15.5f;
     params.dx = 1.0f;
     params.dy = 1.0f;
 
